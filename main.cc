@@ -264,7 +264,7 @@ static void halfadder(const std::vector<int> &lhs, const std::vector<int> &rhs)
 					continue;
 				if (!strncmp(buf, ".e", 2))
 					break;
-	
+
 				std::vector<int> c;
 				for (int i = 0; i < n + m; ++i) {
 					if (buf[i] == '0')
@@ -1022,7 +1022,7 @@ int main(int argc, char *argv[])
 		second_preimage();
 	} else if (config_attack == "collision") {
 		collision();
-	}	
+	}
 
 	if (config_cnf) {
 		std::cout

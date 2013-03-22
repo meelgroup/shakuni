@@ -4,7 +4,7 @@
 
 uint32_t rotl(uint32_t x, unsigned int n)
 {
-	return (x << n) | (x >> (32 - n));
+    return (x << n) | (x >> (32 - n));
 }
 
 void sha1(unsigned int nr_rounds,
@@ -21,8 +21,9 @@ void sha1(unsigned int nr_rounds,
     uint32_t d = h3;
     uint32_t e = h4;
 
-    for (unsigned int i = 16; i < 80; ++i)
+    for (unsigned int i = 16; i < 80; ++i) {
         w[i] = rotl(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
+    }
 
     for (unsigned int i = 0; i < nr_rounds; ++i) {
         uint32_t f, k;
@@ -58,30 +59,48 @@ void sha1(unsigned int nr_rounds,
 
 int main(int argc, char *argv[])
 {
-	unsigned int nr_rounds;
-	scanf("%u", &nr_rounds);
+    unsigned int nr_rounds;
+    int ret;
+    ret = scanf("%u", &nr_rounds);
+    if (ret < 1 || ret == EOF) {
+        exit(EXIT_FAILURE);
+    }
 
-	uint32_t w[80];
-	for (unsigned int i = 0; i < 16; ++i)
-		scanf("%08x", &w[i]);
+    uint32_t w[80];
+    for (unsigned int i = 0; i < 16; ++i) {
+        ret = scanf("%08x", &w[i]);
+        if (ret < 1 || ret == EOF) {
+            exit(EXIT_FAILURE);
+        }
+    }
 
-	uint32_t H[5];
-	for (unsigned int i = 0; i < 5; ++i)
-		scanf("%08x", &H[i]);
+    uint32_t H[5];
+    for (unsigned int i = 0; i < 5; ++i) {
+        ret = scanf("%08x", &H[i]);
+        if (ret < 1 || ret == EOF) {
+            exit(EXIT_FAILURE);
+        }
+    }
 
-	uint32_t h[5];
-	for (unsigned int i = 0; i < 5; ++i)
-		scanf("%08x", &h[i]);
+    uint32_t h[5];
+    for (unsigned int i = 0; i < 5; ++i) {
+        ret = scanf("%08x", &h[i]);
+        if (ret < 1 || ret == EOF) {
+            exit(EXIT_FAILURE);
+        }
+    }
 
-	sha1(nr_rounds, H[0], H[1], H[2], H[3], H[4], w);
+    sha1(nr_rounds, H[0], H[1], H[2], H[3], H[4], w);
 
-	for (unsigned int i = 0; i < 5; ++i)
-		printf("%08x %08x %s\n", h[i], H[i], h[i] == H[i] ? "correct" : "incorrect");
+    for (unsigned int i = 0; i < 5; ++i) {
+        printf("%08x %08x %s\n", h[i], H[i], h[i] == H[i] ? "correct" : "incorrect");
+    }
 
-	for (unsigned int i = 0; i < 5; ++i) {
-		if (h[i] != H[i])
-			exit(EXIT_FAILURE);
-	}
+    for (unsigned int i = 0; i < 5; ++i) {
+        if (h[i] != H[i]) {
+            exit(EXIT_FAILURE);
+        }
+    }
 
-	return 0;
+    return 0;
 }

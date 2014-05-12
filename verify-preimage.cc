@@ -28,7 +28,7 @@ void sha1(unsigned int nr_rounds,
     for (unsigned int i = 0; i < nr_rounds; ++i) {
         uint32_t f, k;
 
-        if (i >= 0 && i < 20) {
+        if (i < 20) {
             f = (b & c) | (~b & d);
             k = uint32_t(0x5a827999U);
         } else if (i >= 20 && i < 40) {
@@ -57,7 +57,7 @@ void sha1(unsigned int nr_rounds,
     h4 = h4 + e;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     unsigned int nr_rounds;
     int ret;

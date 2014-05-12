@@ -266,7 +266,7 @@ static void halfadder(const std::vector<int> &lhs, const std::vector<int> &rhs)
 					break;
 
 				std::vector<int> c;
-				for (int i = 0; i < n + m; ++i) {
+				for (unsigned i = 0; i < n + m; ++i) {
 					if (buf[i] == '0')
 						c.push_back(-(i + 1));
 					else if (buf[i] == '1')
@@ -634,7 +634,7 @@ public:
 			int f[32];
 			new_vars(format("f[$]", i), f, 32);
 
-			if (i >= 0 && i < 20) {
+			if (i < 20) {
 				for (unsigned int j = 0; j < 32; ++j) {
 					clause(-f[j], -b[j], c[j]);
 					clause(-f[j], b[j], d[j]);
@@ -708,7 +708,7 @@ static void sha1_forward(unsigned int nr_rounds, uint32_t w[80], uint32_t h_out[
 	for (unsigned int i = 0; i < nr_rounds; ++i) {
 		uint32_t f, k;
 
-		if (i >= 0 && i < 20) {
+		if (i < 20) {
 			f = (b & c) | (~b & d);
 			k = 0x5A827999;
 		} else if (i >= 20 && i < 40) {

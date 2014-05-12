@@ -46,6 +46,7 @@ static std::string config_attack = "preimage";
 static unsigned int config_nr_rounds = 80;
 static unsigned int config_nr_message_bits = 0;
 static unsigned int config_nr_hash_bits = 160;
+static bool all_zero_output = false;
 
 /* Format options */
 static bool config_cnf = false;
@@ -767,17 +768,23 @@ static void preimage()
 	/* Fix hash bits */
 	comment(format("Fix $ hash bits", config_nr_hash_bits));
 
-	std::vector<unsigned int> hash_bits(160);
-	for (unsigned int i = 0; i < 160; ++i)
-		hash_bits[i] = i;
+    if (all_zero_output) {
+        for (unsigned int i = 0; i < config_nr_hash_bits; ++i) {
+            constant(f.h_out[i/32][i%32], 0);
+        }
+    } else {
+        std::vector<unsigned int> hash_bits(160);
+        for (unsigned int i = 0; i < 160; ++i)
+            hash_bits[i] = i;
 
-	std::random_shuffle(hash_bits.begin(), hash_bits.end());
-	for (unsigned int i = 0; i < config_nr_hash_bits; ++i) {
-		unsigned int r = hash_bits[i] / 32;
-		unsigned int s = hash_bits[i] % 32;
+        std::random_shuffle(hash_bits.begin(), hash_bits.end());
+        for (unsigned int i = 0; i < config_nr_hash_bits; ++i) {
+            unsigned int r = hash_bits[i] / 32;
+            unsigned int s = hash_bits[i] % 32;
 
-		constant(f.h_out[r][s], (h[r] >> s) & 1);
-	}
+            constant(f.h_out[r][s], (h[r] >> s) & 1);
+        }
+    }
 }
 
 /* The second preimage differs from the first preimage by flipping one of
@@ -895,6 +902,7 @@ int main(int argc, char *argv[])
 			("rounds", value<unsigned int>(&config_nr_rounds), "Number of rounds (16-80)")
 			("message-bits", value<unsigned int>(&config_nr_message_bits), "Number of fixed message bits (0-512)")
 			("hash-bits", value<unsigned int>(&config_nr_hash_bits), "Number of fixed hash bits (0-160)")
+            ("zero", bool_switch(&all_zero_output), "When doing preimage attack, hash output should be zero")
 		;
 
 		options_description format_options("Format options");
@@ -949,6 +957,11 @@ int main(int argc, char *argv[])
 			std::cerr << "Invalid --attack\n";
 			return EXIT_FAILURE;
 		}
+
+		if (config_attack != "preimage" && all_zero_output) {
+            std::cerr << "You can only zero out the output for preimage attacks" << std::endl;
+            return EXIT_FAILURE;
+        }
 
 		if (map.count("cnf"))
 			config_cnf = true;

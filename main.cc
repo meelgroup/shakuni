@@ -48,26 +48,16 @@ static unsigned int config_nr_message_bits = 0;
 static unsigned int config_nr_hash_bits = 160;
 static bool all_zero_output = false;
 
-/* Format options */
-static bool config_cnf = false;
-static bool config_opb = false;
-
 /* CNF options */
 static bool config_use_xor_clauses = false;
-static bool config_use_halfadder_clauses = false;
-static bool config_use_tseitin_adders = false;
+static bool config_use_tseitin_adders = true;
 static bool config_restrict_branching = false;
 
-/* OPB options */
-static bool config_use_compact_adders = false;
-
 static std::ostringstream cnf;
-static std::ostringstream opb;
 
 static void comment(std::string str)
 {
 	cnf << format("c $\n", str);
-	opb << format("* $\n", str);
 }
 
 static int nr_variables = 0;
@@ -96,7 +86,6 @@ static void new_vars(std::string label, int x[], unsigned int n, bool decision_v
 static void constant(int r, bool value)
 {
 	cnf << format("$$ 0\n", value ? "" : "-", r);
-	opb << format("1 x$ = $;\n", r, value ? 1 : 0);
 
 	nr_clauses += 1;
 	nr_constraints += 1;
@@ -108,7 +97,6 @@ static void constant32(int r[], uint32_t value)
 
 	for (unsigned int i = 0; i < 32; ++i) {
 		cnf << format("$$ 0\n", (value >> i) & 1 ? "" : "-", r[i]);
-		opb << format("1 x$ = $;\n", r[i], (value >> i) & 1);
 
 		nr_clauses += 1;
 		nr_constraints += 1;
@@ -137,11 +125,9 @@ static void clause(const std::vector<int> &v)
 {
 	for (int x: v) {
 		cnf << format("$$ ", x < 0 ? "-" : "", abs(x));
-		opb << format("1 $x$ ", x < 0 ? "~" : "", abs(x));
 	}
 
 	cnf << format("0\n");
-	opb << format(">= 1;\n");
 
 	nr_clauses += 1;
 	nr_constraints += 1;
@@ -173,157 +159,6 @@ static void xor_clause(Args... args)
 	std::vector<int> v;
 	args_to_vector(v, args...);
 	xor_clause(v);
-}
-
-static void halfadder(const std::vector<int> &lhs, const std::vector<int> &rhs)
-{
-	if (config_use_halfadder_clauses) {
-		cnf << "h ";
-
-		for (int x: lhs)
-			cnf << format("$ ", x);
-
-		cnf << "0 ";
-
-		for (int x: rhs)
-			cnf << format("$ ", x);
-
-		cnf << "0\n";
-	} else {
-		static std::map<std::pair<unsigned int, unsigned int>, std::vector<std::vector<int>>> cache;
-
-		unsigned int n = lhs.size();
-		unsigned int m = rhs.size();
-
-		std::vector<std::vector<int>> clauses;
-		auto it = cache.find(std::make_pair(n, m));
-		if (it != cache.end()) {
-			clauses = it->second;
-		} else {
-			int wfd[2], rfd[2];
-
-			/* pipe(): fd[0] is for reading, fd[1] is for writing */
-
-			if (pipe(wfd) == -1)
-				throw std::runtime_error("pipe() failed");
-
-			if (pipe(rfd) == -1)
-				throw std::runtime_error("pipe() failed");
-
-			pid_t child = fork();
-			if (child == 0) {
-				if (dup2(wfd[0], STDIN_FILENO) == -1)
-					throw std::runtime_error("dup() failed");
-
-				if (dup2(rfd[1], STDOUT_FILENO) == -1)
-					throw std::runtime_error("dup() failed");
-
-				if (execlp("espresso", "espresso", 0) == -1)
-					throw std::runtime_error("execve() failed");
-
-				exit(EXIT_FAILURE);
-			}
-
-			close(wfd[0]);
-			close(rfd[1]);
-
-			FILE *eout = fdopen(wfd[1], "w");
-			if (!eout)
-				throw std::runtime_error("fdopen() failed");
-
-			FILE *ein = fdopen(rfd[0], "r");
-			if (!ein)
-				throw std::runtime_error("fdopen() failed");
-
-			fprintf(eout, ".i %u\n", n + m);
-			fprintf(eout, ".o 1\n");
-
-			for (unsigned int i = 0; i < 1U << n; ++i) {
-				for (unsigned int j = 0; j < 1U << m; ++j) {
-					for (unsigned int k = n; k--; )
-						fprintf(eout, "%u", 1 - ((i >> k) & 1));
-					for (unsigned int k = m; k--; )
-						fprintf(eout, "%u", 1 - ((j >> k) & 1));
-
-					fprintf(eout, " %u\n", __builtin_popcount(i) != j);
-				}
-			}
-
-			fprintf(eout, ".e\n");
-			fflush(eout);
-
-			while (1) {
-				char buf[512];
-				if (!fgets(buf, sizeof(buf), ein))
-					break;
-
-				if (!strncmp(buf, ".i", 2))
-					continue;
-				if (!strncmp(buf, ".o", 2))
-					continue;
-				if (!strncmp(buf, ".p", 2))
-					continue;
-				if (!strncmp(buf, ".e", 2))
-					break;
-
-				std::vector<int> c;
-				for (unsigned i = 0; i < n + m; ++i) {
-					if (buf[i] == '0')
-						c.push_back(-(i + 1));
-					else if (buf[i] == '1')
-						c.push_back(i + 1);
-				}
-
-				clauses.push_back(c);
-			}
-
-			fclose(ein);
-			fclose(eout);
-
-			while (true) {
-				int status;
-				pid_t kid = wait(&status);
-				if (kid == -1) {
-					if (errno == ECHILD)
-						break;
-					if (errno == EINTR)
-						continue;
-
-					throw std::runtime_error("wait() failed");
-				}
-
-				if (kid == child)
-					break;
-			}
-
-			cache.insert(std::make_pair(std::make_pair(n, m), clauses));
-		}
-
-		for (std::vector<int> &c: clauses) {
-			for (int i: c) {
-				int j = abs(i) - 1;
-				int var = j < n ? lhs[j] : rhs[m - 1 - (j - n)];
-				if (i < 0)
-					cnf << format("$ ", -var);
-				else
-					cnf << format("$ ", var);
-			}
-
-			cnf << "0\n";
-
-			nr_clauses += 1;
-		}
-	}
-
-	for (int x: lhs)
-		opb << format("1 x$ ", x);
-
-	for (unsigned int i = 0; i < rhs.size(); ++i)
-		opb << format("-$ x$ ", 1U << i, rhs[i]);
-
-	opb << format("= 0;\n");
-
-	nr_constraints += 1;
 }
 
 static void xor2(int r[], int a[], int b[], unsigned int n)
@@ -461,34 +296,6 @@ static void add2(std::string label, int r[32], int a[32], int b[32])
 		and2(t2, t0, c, 31);
 		or2(&c[1], t1, t2, 30);
 		xor2(&r[1], t0, c, 31);
-	} else if (config_use_compact_adders) {
-		for (unsigned int i = 0; i < 32; ++i)
-			opb << format("$ x$ ", 1L << i, a[i]);
-		for (unsigned int i = 0; i < 32; ++i)
-			opb << format("$ x$ ", 1L << i, b[i]);
-
-		for (unsigned int i = 0; i < 32; ++i)
-			opb << format("-$ x$ ", 1UL << i, r[i]);
-
-		opb << format("= 0;\n");
-
-		++nr_constraints;
-	} else {
-		std::vector<int> addends[32 + 5];
-		for (unsigned int i = 0; i < 32; ++i) {
-			addends[i].push_back(a[i]);
-			addends[i].push_back(b[i]);
-
-			unsigned int m = floor(log2(addends[i].size()));
-			std::vector<int> rhs(1 + m);
-			rhs[0] = r[i];
-			new_vars(format("$_rhs[$]", label, i), &rhs[1], m);
-
-			for (unsigned int j = 1; j < 1 + m; ++j)
-				addends[i + j].push_back(rhs[j]);
-
-			halfadder(addends[i], rhs);
-		}
 	}
 }
 
@@ -510,43 +317,8 @@ static void add5(std::string label, int r[32], int a[32], int b[32], int c[32], 
 		add2(label, t1, c, d);
 		add2(label, t2, t0, t1);
 		add2(label, r, t2, e);
-	} else if (config_use_compact_adders) {
-		for (unsigned int i = 0; i < 32; ++i)
-			opb << format("$ x$ ", 1L << i, a[i]);
-		for (unsigned int i = 0; i < 32; ++i)
-			opb << format("$ x$ ", 1L << i, b[i]);
-		for (unsigned int i = 0; i < 32; ++i)
-			opb << format("$ x$ ", 1L << i, c[i]);
-		for (unsigned int i = 0; i < 32; ++i)
-			opb << format("$ x$ ", 1L << i, d[i]);
-		for (unsigned int i = 0; i < 32; ++i)
-			opb << format("$ x$ ", 1L << i, e[i]);
-
-		for (unsigned int i = 0; i < 32; ++i)
-			opb << format("-$ x$ ", 1UL << i, r[i]);
-
-		opb << format("= 0;\n");
-
-		++nr_constraints;
 	} else {
-		std::vector<int> addends[32 + 5];
-		for (unsigned int i = 0; i < 32; ++i) {
-			addends[i].push_back(a[i]);
-			addends[i].push_back(b[i]);
-			addends[i].push_back(c[i]);
-			addends[i].push_back(d[i]);
-			addends[i].push_back(e[i]);
-
-			unsigned int m = floor(log2(addends[i].size()));
-			std::vector<int> rhs(1 + m);
-			rhs[0] = r[i];
-			new_vars(format("$_rhs[$]", label, i), &rhs[1], m);
-
-			for (unsigned int j = 1; j < 1 + m; ++j)
-				addends[i + j].push_back(rhs[j]);
-
-			halfadder(addends[i], rhs);
-		}
+		assert(false);
 	}
 }
 
@@ -768,23 +540,23 @@ static void preimage()
 	/* Fix hash bits */
 	comment(format("Fix $ hash bits", config_nr_hash_bits));
 
-    if (all_zero_output) {
-        for (unsigned int i = 0; i < config_nr_hash_bits; ++i) {
-            constant(f.h_out[i/32][i%32], 0);
-        }
-    } else {
-        std::vector<unsigned int> hash_bits(160);
-        for (unsigned int i = 0; i < 160; ++i)
-            hash_bits[i] = i;
+	if (all_zero_output) {
+		for (unsigned int i = 0; i < config_nr_hash_bits; ++i) {
+			constant(f.h_out[i/32][i%32], 0);
+		}
+	} else {
+		std::vector<unsigned int> hash_bits(160);
+		for (unsigned int i = 0; i < 160; ++i)
+			hash_bits[i] = i;
 
-        std::random_shuffle(hash_bits.begin(), hash_bits.end());
-        for (unsigned int i = 0; i < config_nr_hash_bits; ++i) {
-            unsigned int r = hash_bits[i] / 32;
-            unsigned int s = hash_bits[i] % 32;
+		std::random_shuffle(hash_bits.begin(), hash_bits.end());
+		for (unsigned int i = 0; i < config_nr_hash_bits; ++i) {
+			unsigned int r = hash_bits[i] / 32;
+			unsigned int s = hash_bits[i] % 32;
 
-            constant(f.h_out[r][s], (h[r] >> s) & 1);
-        }
-    }
+			constant(f.h_out[r][s], (h[r] >> s) & 1);
+		}
+	}
 }
 
 /* The second preimage differs from the first preimage by flipping one of
@@ -902,26 +674,18 @@ int main(int argc, char *argv[])
 			("rounds", value<unsigned int>(&config_nr_rounds), "Number of rounds (16-80)")
 			("message-bits", value<unsigned int>(&config_nr_message_bits), "Number of fixed message bits (0-512)")
 			("hash-bits", value<unsigned int>(&config_nr_hash_bits), "Number of fixed hash bits (0-160)")
-            ("zero", bool_switch(&all_zero_output), "When doing preimage attack, hash output should be zero")
+			("zero", bool_switch(&all_zero_output), "When doing preimage attack, hash output should be zero")
 		;
 
 		options_description format_options("Format options");
 		format_options.add_options()
-			("cnf", "Generate CNF")
-			("opb", "Generate OPB")
 			("tseitin-adders", "Use Tseitin encoding of the circuit representation of adders");
 		;
 
 		options_description cnf_options("CNF-specific options");
 		cnf_options.add_options()
 			("xor", "Use XOR clauses")
-			("halfadder", "Use half-adder clauses")
 			("restrict-branching", "Restrict branching variables to message bits")
-		;
-
-		options_description opb_options("OPB-specific options");
-		opb_options.add_options()
-			("compact-adders", "Use compact adders")
 		;
 
 		options_description all_options;
@@ -929,7 +693,6 @@ int main(int argc, char *argv[])
 		all_options.add(instance_options);
 		all_options.add(format_options);
 		all_options.add(cnf_options);
-		all_options.add(opb_options);
 
 		positional_options_description p;
 		p.add("input", -1);
@@ -959,50 +722,15 @@ int main(int argc, char *argv[])
 		}
 
 		if (config_attack != "preimage" && all_zero_output) {
-            std::cerr << "You can only zero out the output for preimage attacks" << std::endl;
-            return EXIT_FAILURE;
-        }
-
-		if (map.count("cnf"))
-			config_cnf = true;
-
-		if (map.count("opb"))
-			config_opb = true;
-
-		if (map.count("tseitin-adders"))
-			config_use_tseitin_adders = true;
+			std::cerr << "You can only zero out the output for preimage attacks" << std::endl;
+			return EXIT_FAILURE;
+		}
 
 		if (map.count("xor"))
 			config_use_xor_clauses = true;
 
-		if (map.count("halfadder"))
-			config_use_halfadder_clauses = true;
-
 		if (map.count("restrict-branching"))
 			config_restrict_branching = true;
-
-		if (map.count("compact-adders"))
-			config_use_compact_adders = true;
-	}
-
-	if (!config_cnf && !config_opb) {
-		std::cerr << "Must specify either --cnf or --opb\n";
-		return EXIT_FAILURE;
-	}
-
-	if (config_use_xor_clauses && !config_cnf) {
-		std::cerr << "Cannot specify --xor without --cnf\n";
-		return EXIT_FAILURE;
-	}
-
-	if (config_use_halfadder_clauses && !config_cnf) {
-		std::cerr << "Cannot specify --halfadder without --cnf\n";
-		return EXIT_FAILURE;
-	}
-
-	if (config_use_compact_adders && !config_opb) {
-		std::cerr << "Cannot specify --compact-adders without --opb\n";
-		return EXIT_FAILURE;
 	}
 
 	comment("");
@@ -1037,17 +765,9 @@ int main(int argc, char *argv[])
 		collision();
 	}
 
-	if (config_cnf) {
-		std::cout
-			<< format("p cnf $ $\n", nr_variables, nr_clauses)
-			<< cnf.str();
-	}
-
-	if (config_opb) {
-		std::cout
-			<< format("* #variable= $ #constraint= $\n", nr_variables, nr_constraints)
-			<< opb.str();
-	}
+	std::cout
+	<< format("p cnf $ $\n", nr_variables, nr_clauses)
+	<< cnf.str();
 
 	return 0;
 }

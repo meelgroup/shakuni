@@ -110,7 +110,7 @@ static void new_constant(std::string label, int r[32], uint32_t value)
 }
 
 template<typename T>
-static void args_to_vector(std::vector<T> &v)
+static void args_to_vector(std::vector<T> &/*v*/)
 {
 }
 

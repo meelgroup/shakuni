@@ -271,7 +271,7 @@ static void or2(int r[], int a[], int b[], unsigned int n)
 	}
 }
 
-static void add2(std::string label, int r[32], int a[32], int b[32])
+static void add2(std::string /*label*/, int r[32], int a[32], int b[32])
 {
 	comment("add2");
 

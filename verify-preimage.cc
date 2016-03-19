@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
+#include <cassert>
 
 uint32_t rotl(uint32_t x, unsigned int n)
 {
@@ -40,6 +41,8 @@ void sha1(unsigned int nr_rounds,
         } else if (i >= 60 && i < 80) {
             f = b ^ c ^ d;
             k = uint32_t(0xca62c1d6U);
+        } else {
+            assert(false);
         }
 
         uint32_t t = rotl(a, 5) + f + e + k + w[i];

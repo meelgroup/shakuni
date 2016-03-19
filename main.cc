@@ -493,6 +493,8 @@ static void sha1_forward(unsigned int nr_rounds, uint32_t w[80], uint32_t h_out[
 		} else if (i >= 60 && i < 80) {
 			f = b ^ c ^ d;
 			k = 0xCA62C1D6;
+		} else {
+            assert(false);
 		}
 
 		uint32_t t = rotl(a, 5) + f + e + k + w[i];

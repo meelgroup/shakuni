@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
+if(NOT (CMAKE_MAJOR_VERSION LESS 2))
+    if(POLICY CMP0048)
+        #policy for VERSION in cmake 3.0
+        cmake_policy(SET CMP0048 OLD)
+    endif()
+endif()
+
 # -----------------------------------------------------------------------------
 # Make RelWithDebInfo the default build type if otherwise not set
 # -----------------------------------------------------------------------------

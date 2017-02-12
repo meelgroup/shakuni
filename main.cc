@@ -52,12 +52,15 @@ static bool all_zero_output = false;
 static bool config_use_xor_clauses = false;
 static bool config_use_tseitin_adders = true;
 static bool config_restrict_branching = false;
+static bool nocomment = false;
 
 static std::ostringstream cnf;
 
 static void comment(std::string str)
 {
-	cnf << format("c $\n", str);
+    if (!nocomment) {
+        cnf << format("c $\n", str);
+    }
 }
 
 static int nr_variables = 0;
@@ -681,7 +684,8 @@ int main(int argc, char *argv[])
 
 		options_description format_options("Format options");
 		format_options.add_options()
-			("tseitin-adders", "Use Tseitin encoding of the circuit representation of adders");
+			("tseitin-adders", "Use Tseitin encoding of the circuit representation of adders")
+			("nocomment", "Don't add comments");
 		;
 
 		options_description cnf_options("CNF-specific options");
@@ -709,6 +713,10 @@ int main(int argc, char *argv[])
 		if (map.count("help")) {
 			std::cout << all_options;
 			return 0;
+		}
+
+		if (map.count("nocomment")) {
+			nocomment = true;
 		}
 
 		if (map.count("attack") == 1) {

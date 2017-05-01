@@ -20,18 +20,23 @@ ENDIF()
 
 PROJECT(sha1-sat)
 
-if (CMAKE_COMPILER_IS_GNUCC)
-    SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        "-std=c++0x  -pedantic -Wall -Wextra -Wunused -Wsign-compare -Wtype-limits -Wuninitialized -Wno-deprecated -g -fno-omit-frame-pointer -O4 -mtune=native")
-    SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -Wunused -Wsign-compare -Wtype-limits -Wuninitialized -Wall -Wno-deprecated -O0 -ggdb")
-    SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -Wall -Wno-deprecated -O2 -g -DNDEBUG -mtune=native") #-fprofile-generate / -fprofile-use
-endif(CMAKE_COMPILER_IS_GNUCC)
+option(STATICCOMPILE "Compile to static executable" OFF)
 
 find_package( Boost 1.46 REQUIRED COMPONENTS program_options)
 
 add_executable(sha1-gen
     main.cc
 )
+
+if (STATICCOMPILE)
+    SET_TARGET_PROPERTIES(sha1-gen PROPERTIES LINK_SEARCH_START_STATIC 1)
+endif()
+set_target_properties(sha1-gen PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
+    INSTALL_RPATH_USE_LINK_PATH TRUE)
+if (STATICCOMPILE)
+    SET_TARGET_PROPERTIES(sha1-gen PROPERTIES LINK_SEARCH_END_STATIC 1)
+endif()
 
 target_link_libraries(sha1-gen
     ${Boost_LIBRARIES}

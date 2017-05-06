@@ -23,6 +23,7 @@ PROJECT(sha1-sat)
 option(STATICCOMPILE "Compile to static executable" OFF)
 
 find_package( Boost 1.46 REQUIRED COMPONENTS program_options)
+include_directories(${Boost_INCLUDE_DIRS})
 
 add_executable(sha1-gen
     main.cc

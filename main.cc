@@ -513,8 +513,10 @@ static void preimage()
 
 	/* Generate a known-valid (messsage, hash)-pair */
 	uint32_t w[80];
-	for (unsigned int i = 0; i < 16; ++i)
-		w[i] = lrand48();
+	for (unsigned int i = 0; i < 16; ++i) {
+		w[i] = ((uint32_t)(rand() & 0xffff));
+		w[i] |= ((uint32_t)(rand() & 0xffff)) << 16;
+    }
 
 	uint32_t h[5];
 	sha1_forward(config_nr_rounds, w, h);
@@ -564,8 +566,10 @@ static void second_preimage()
 
 	/* Generate a known-valid (messsage, hash)-pair */
 	uint32_t w[80];
-	for (unsigned int i = 0; i < 16; ++i)
-		w[i] = lrand48();
+	for (unsigned int i = 0; i < 16; ++i) {
+		w[i] = ((uint32_t)(rand() & 0xffff));
+		w[i] |= ((uint32_t)(rand() & 0xffff)) << 16;
+	}
 
 	uint32_t h[5];
 	sha1_forward(config_nr_rounds, w, h);
@@ -757,7 +761,6 @@ int main(int argc, char *argv[])
 
 	comment(format("parameter seed = $", seed));
 	srand(seed);
-	srand48(rand());
 
 	if (config_attack == "preimage") {
 		preimage();

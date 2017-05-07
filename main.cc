@@ -32,6 +32,12 @@
 #include <boost/program_options.hpp>
 #include "format.hh"
 
+#if defined (_MSC_VER)
+#define my_popcnt(x) __popcnt(x)
+#else
+#define my_popcnt(x) __builtin_popcount(x)
+#endif
+
 
 /* Instance options */
 static std::string config_attack = "preimage";
@@ -166,7 +172,7 @@ static void xor2(int r[], int a[], int b[], unsigned int n)
 	} else {
 		for (unsigned int i = 0; i < n; ++i) {
 			for (unsigned int j = 0; j < 8; ++j) {
-				if (__builtin_popcount(j ^ 1) % 2 == 1)
+				if (my_popcnt(j ^ 1) % 2 == 1)
 					continue;
 
 				clause((j & 1) ? -r[i] : r[i],
@@ -187,7 +193,7 @@ static void xor3(int r[], int a[], int b[], int c[], unsigned int n = 32)
 	} else {
 		for (unsigned int i = 0; i < n; ++i) {
 			for (unsigned int j = 0; j < 16; ++j) {
-				if (__builtin_popcount(j ^ 1) % 2 == 0)
+				if (my_popcnt(j ^ 1) % 2 == 0)
 					continue;
 
 				clause((j & 1) ? -r[i] : r[i],
@@ -209,7 +215,7 @@ static void xor4(int r[32], int a[32], int b[32], int c[32], int d[32])
 	} else {
 		for (unsigned int i = 0; i < 32; ++i) {
 			for (unsigned int j = 0; j < 32; ++j) {
-				if (__builtin_popcount(j ^ 1) % 2 == 1)
+				if (my_popcnt(j ^ 1) % 2 == 1)
 					continue;
 
 				clause((j & 1) ? -r[i] : r[i],

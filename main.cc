@@ -29,15 +29,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
-
 #include <boost/program_options.hpp>
-
-extern "C" {
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-}
-
 #include "format.hh"
 
 

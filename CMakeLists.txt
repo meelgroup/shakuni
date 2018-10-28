@@ -27,15 +27,9 @@ add_executable(sha1-gen
     main.cc
 )
 
-if (STATICCOMPILE)
-    SET_TARGET_PROPERTIES(sha1-gen PROPERTIES LINK_SEARCH_START_STATIC 1)
-endif()
 set_target_properties(sha1-gen PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
     INSTALL_RPATH_USE_LINK_PATH TRUE)
-if (STATICCOMPILE)
-    SET_TARGET_PROPERTIES(sha1-gen PROPERTIES LINK_SEARCH_END_STATIC 1)
-endif()
 
 target_link_libraries(sha1-gen
     ${Boost_LIBRARIES}

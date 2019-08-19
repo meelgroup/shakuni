@@ -23,19 +23,6 @@ option(STATICCOMPILE "Compile to static executable" OFF)
 find_package( Boost 1.46 REQUIRED COMPONENTS program_options)
 include_directories(${Boost_INCLUDE_DIRS})
 
-add_executable(sha1-gen
-    main.cc
-)
-
-set_target_properties(sha1-gen PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
-    INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-target_link_libraries(sha1-gen
-    ${Boost_LIBRARIES}
-)
-
-
 add_executable(counter
     counter.cc
 )
@@ -46,10 +33,5 @@ set_target_properties(counter PROPERTIES
 
 target_link_libraries(counter
     ${Boost_LIBRARIES}
-)
-
-
-add_executable(sha1-verify
-    verify-preimage.cc
 )
 

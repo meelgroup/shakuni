@@ -35,6 +35,20 @@ target_link_libraries(sha1-gen
     ${Boost_LIBRARIES}
 )
 
+
+add_executable(counter
+    counter.cc
+)
+
+set_target_properties(counter PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
+    INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+target_link_libraries(counter
+    ${Boost_LIBRARIES}
+)
+
+
 add_executable(sha1-verify
     verify-preimage.cc
 )

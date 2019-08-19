@@ -1,67 +1,14 @@
-sha1-sat -- SAT instance generator for SHA-1
-============================================
+./counter --seed 21   --rounds 47 --message-bits 500 --hash-bits 1 > tosample
+cp tosample /home/soos/development/sat_solvers/scalmc/build/
+cp tosample /home/soos/development/sat_solvers/cryptominisat/build/
+
+ScalMC:
+./approxmc --seed 11 tosample  -v1 --samples 100 --sampleout x1 --multisample 1
+awk '{print $1}' x1 | sort | uniq -c
 
 
-# Compiling
+sample.sh:
+./cryptominisat5 --maxsol 100 --restart geom --maple 0 --verb 0 -n 1 --presimp 0 --polar rnd --freq 0.9999 --random $1 $2
+./sampling.sh 1 tosample > x
+grep "v 1 " x | wc -l
 
-To compile, you first need to make sure you have the Boost libraries
-installed. When you do, simply run make.sh:
-
-```
-bash make.sh
-```
-
-# Running
-
-Before running, please make sure that the espresso binary is in your PATH.
-espresso is used to minimise the truth tables for the pseudo-boolean
-constraints used to encode the adders. You can obtain espresso from
-<ftp://ftp.cs.man.ac.uk/pub/amulet/balsa/other-software/espresso-ab-1.0.tar.gz>.
-
-```
-wget ftp://ftp.cs.man.ac.uk/pub/amulet/balsa/other-software/espresso-ab-1.0.tar.gz
-tar xzvf espresso-ab-1.0.tar.gz
-cd espresso-ab-1.0
-./configure
-make
-cd ..
-export PATH="$PWD/espresso-ab-1.0/src:$PATH"
-```
-
-To generate a CNF instance encoding a preimage attack on the full SHA-1
-algorithm, run:
-
-```
-./main --cnf --rounds=80 --hash-bits=160 > instance.cnf
-```
-
-To look at the possible options, run:
-
-```
-./main --help
-```
-
-The program can also generate OPB instances (pseudo-boolean constraints) if
-you specify --opb instead of --cnf.
-
-
-# Verifying solutions
-
-To verify that the solution output by the solver is actually correct, run:
-
-```
-perl verify-preimage instance.cnf solution | ./verify-preimage
-```
-
-Here, 'solution' is the file output e.g. by minisat or the 'v'-line for
-other popular solvers like CryptoMiniSAT or PrecoSAT. The program returns
-an error code of 0 if and only if the solution is correct.
-
-
-# About
-
-I developed this program as part of my master thesis. Please e-mail comments,
-suggestions, etc. to me at <vegard.nossum@gmail.com>.
-
-If you use the program in your research, please make a note of this in your
-acknowledgements and let me know about your paper/thesis/etc.!

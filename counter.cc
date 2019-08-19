@@ -49,6 +49,11 @@ static bool all_zero_output = false;
 static bool config_use_tseitin_adders = true;
 static bool nocomment = false;
 
+//Counting
+int var_switch[1];
+std::stringstream indep_vars;
+std::vector<int> message_bit_vars;
+
 static std::ostringstream cnf;
 
 static void comment(std::string str)
@@ -69,32 +74,6 @@ static void new_vars(std::string label, int x[], unsigned int n)
         x[i] = ++nr_variables;
 
     comment(format("var $/$ $", x[0], n, label));
-}
-
-static void constant(int r, bool value)
-{
-    cnf << format("$$ 0\n", value ? "" : "-", r);
-
-    nr_clauses += 1;
-    nr_constraints += 1;
-}
-
-static void constant32(int r[], uint32_t value)
-{
-    comment(format("constant32 ($)", value));
-
-    for (unsigned int i = 0; i < 32; ++i) {
-        cnf << format("$$ 0\n", (value >> i) & 1 ? "" : "-", r[i]);
-
-        nr_clauses += 1;
-        nr_constraints += 1;
-    }
-}
-
-static void new_constant(std::string label, int r[32], uint32_t value)
-{
-    new_vars(label, r, 32);
-    constant32(r, value);
 }
 
 template <typename T>
@@ -122,12 +101,42 @@ static void clause(const std::vector<int> &v)
 }
 
 template <typename... Args>
-static void clause(Args... args)
+static void clause_noswitch(Args... args)
 {
     std::vector<int> v;
     args_to_vector(v, args...);
     clause(v);
 }
+
+template <typename... Args>
+static void clause(Args... args)
+{
+    std::vector<int> v;
+    v.push_back(var_switch[0]);
+    args_to_vector(v, args...);
+    clause(v);
+}
+
+static void constant(int r, bool value)
+{
+    clause(value ? r : -r);
+}
+
+static void constant32(int r[], uint32_t value)
+{
+    comment(format("constant32 ($)", value));
+
+    for (unsigned int i = 0; i < 32; ++i) {
+        clause(((value >> i) & 1) ? r[i] : -r[i]);
+    }
+}
+
+static void new_constant(std::string label, int r[32], uint32_t value)
+{
+    new_vars(label, r, 32);
+    constant32(r, value);
+}
+
 
 static void xor2(int r[], int a[], int b[], unsigned int n)
 {
@@ -476,6 +485,12 @@ static void preimage()
         constant(f.w[r][s], (w[r] >> s) & 1);
     }
 
+    for (unsigned int i = 0; i < 512; ++i) {
+        unsigned int r = message_bits[i] / 32;
+        unsigned int s = message_bits[i] % 32;
+        message_bit_vars.push_back(f.w[r][s]);
+    }
+
     /* Fix hash bits */
     comment(format("Fix $ hash bits", config_nr_hash_bits));
 
@@ -501,6 +516,7 @@ static void preimage()
 int main(int argc, char *argv[])
 {
     unsigned long seed = time(0);
+    indep_vars << "ind ";
 
     /* Process command line */
     {
@@ -571,7 +587,48 @@ int main(int argc, char *argv[])
 
     comment(format("parameter seed = $", seed));
     srand(seed);
+
+    new_vars("switch", var_switch, 1);
     preimage();
+
+    comment(format("Forcing all other vars to 1 when switch is 0"));
+
+    //Indep vars
+    indep_vars << var_switch[0] << " ";
+    for (int x: message_bit_vars) {
+        indep_vars << x << " ";
+    }
+    indep_vars << "0";
+    comment(indep_vars.str());
+
+    //allow expansion on message bits
+    std::vector<int> my_shuf;
+    my_shuf.resize(message_bit_vars.size());
+    for(uint32_t i = 0; i < message_bit_vars.size(); i++) {
+        my_shuf[i] = i;
+    }
+    std::random_shuffle(my_shuf.begin(), my_shuf.end());
+    assert(my_shuf.size() == message_bit_vars.size());
+    uint32_t unrestricted = 11;
+    for(int i = 0; i < my_shuf.size(); i++) {
+        if (i >= unrestricted) {
+            //std::cerr << "my_shuf[i]: " << my_shuf[i] << std::endl;
+            clause_noswitch(-1, message_bit_vars[my_shuf[i]]);
+        }
+    }
+
+    //Restrict everything else, but not message bits
+    std::vector<char> message_vars_lookup;
+    message_vars_lookup.resize(nr_variables+1, 0);
+    for(int x: message_bit_vars) {
+        message_vars_lookup[x] = 1;
+    }
+    for (int i = 2; i <= nr_variables; i++) {
+        if (!message_vars_lookup[i]) {
+            clause_noswitch(-1, i);
+        }
+    }
+    //clause_noswitch(-1);
 
     std::cout << format("p cnf $ $\n", nr_variables, nr_clauses) << cnf.str();
 

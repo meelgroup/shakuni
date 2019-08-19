@@ -129,26 +129,6 @@ static void clause(Args... args)
     clause(v);
 }
 
-static void xor_clause(const std::vector<int> &v)
-{
-    cnf << format("x ");
-
-    for (int x: v)
-        cnf << format("$$ ", x < 0 ? "-" : "", abs(x));
-
-    cnf << format("0\n");
-
-    nr_xor_clauses += 1;
-}
-
-template <typename... Args>
-static void xor_clause(Args... args)
-{
-    std::vector<int> v;
-    args_to_vector(v, args...);
-    xor_clause(v);
-}
-
 static void xor2(int r[], int a[], int b[], unsigned int n)
 {
     comment("xor2");

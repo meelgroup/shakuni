@@ -42,8 +42,7 @@ Then run:
 
 ```
 ./sampling.sh 1 tosample > x
-grep "v 1 " x | wc -l
-grep "v -1 " x | wc -l
+$ egrep "v -?1 " x | awk '{print $2}' | sort | uniq -c
 ```
 
 This will give you the disparity. Should be approx 50-50 but it will be much worse, around 98:2.
@@ -57,3 +56,30 @@ This creates 2**8 easy and 2**11 hard solutions:
 ```
 ./counter --easy 8 --seed 23   --rounds 30 --message-bits 495 --hash-bits 6 > tosample
 ```
+
+Here, you should get 0.89:0.11 sample distribution:
+
+```
+>>> 2**8/(2**11+2**8)
+0.1111111111111111
+>>> 2**11/(2**11+2**8)
+0.8888888888888888
+```
+
+ScalMC gives:
+
+```
+$ awk '{print $1}' x1 | sort | uniq -c
+99 -1
+11 1
+```
+
+Whereas CMS gives
+
+```
+$ egrep "v -?1 " x | awk '{print $2}' | sort | uniq -c
+      9 -1
+     91 1
+```
+
+So completely off, the **wrong way around**

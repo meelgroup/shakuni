@@ -60,6 +60,8 @@ static bool nocomment = false;
 int var_switch[1];
 std::stringstream indep_vars;
 std::vector<int> message_bit_vars;
+std::vector<char> input;
+std::vector<char> output;
 
 static std::ostringstream cnf;
 
@@ -467,15 +469,29 @@ static void preimage()
 {
     sha1 f(config_nr_rounds, "");
 
-    /* Generate a known-valid (messsage, hash)-pair */
+    /* Generate a known-valid (messsage, hash)-pair
+     * Only first 16*4 bytes of data is used for message
+     *      rest is used during SHA1 computation
+     */
     uint32_t w[80];
     for (unsigned int i = 0; i < 16; ++i) {
         w[i] = ((uint32_t)(rand() & 0xffff));
         w[i] |= ((uint32_t)(rand() & 0xffff)) << 16;
+
+        for(uint32_t i2 = 0; i2 < 32; i2++) {
+            input.push_back((w[i] >> i2) & 1);
+        }
     }
+    assert(input.size() == 512);
 
     uint32_t h[5];
     sha1_forward(config_nr_rounds, w, h);
+    for(uint32_t i = 0; i < 5; i++) {
+        for(uint32_t i2 = 0; i2 < 32; i2++) {
+            output.push_back((h[i] >> i2) & 1);
+        }
+    }
+    assert(output.size() == 160);
 
     /* Fix message bits */
     comment(format("Fix $ message bits", config_nr_message_bits));
@@ -489,9 +505,10 @@ static void preimage()
         unsigned int r = message_bits[i] / 32;
         unsigned int s = message_bits[i] % 32;
 
-        constant(f.w[r][s], (w[r] >> s) & 1);
+        constant(f.w[r][s], input[message_bits[i]]);
     }
 
+    //Fill message_bit_vars
     for (unsigned int i = 0; i < 512; ++i) {
         unsigned int r = message_bits[i] / 32;
         unsigned int s = message_bits[i] % 32;
@@ -515,7 +532,7 @@ static void preimage()
             unsigned int r = hash_bits[i] / 32;
             unsigned int s = hash_bits[i] % 32;
 
-            constant(f.h_out[r][s], (h[r] >> s) & 1);
+            constant(f.h_out[r][s], output[hash_bits[i]]);
         }
     }
 }
@@ -610,13 +627,11 @@ int main(int argc, char *argv[])
     comment(indep_vars.str());
 
     //allow expansion on message bits
-    std::vector<int> my_shuf;
-    my_shuf.resize(message_bit_vars.size());
+    std::vector<int> my_shuf(message_bit_vars.size());
     for(uint32_t i = 0; i < message_bit_vars.size(); i++) {
         my_shuf[i] = i;
     }
     std::random_shuffle(my_shuf.begin(), my_shuf.end());
-    assert(my_shuf.size() == message_bit_vars.size());
     for(int i = 0; i < my_shuf.size(); i++) {
         if (i >= config_easy_sol_bits) {
             //std::cerr << "my_shuf[i]: " << my_shuf[i] << std::endl;
@@ -625,8 +640,7 @@ int main(int argc, char *argv[])
     }
 
     //Restrict everything else, but not message bits
-    std::vector<char> message_vars_lookup;
-    message_vars_lookup.resize(nr_variables+1, 0);
+    std::vector<char> message_vars_lookup(nr_variables+1, 0);
     for(int x: message_bit_vars) {
         message_vars_lookup[x] = 1;
     }

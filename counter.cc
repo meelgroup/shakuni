@@ -195,22 +195,6 @@ static void xor4(int r[32], int a[32], int b[32], int c[32], int d[32])
     }
 }
 
-static void eq(int a[], int b[], unsigned int n = 32)
-{
-    for (unsigned int i = 0; i < n; ++i) {
-        clause(-a[i], b[i]);
-        clause(a[i], -b[i]);
-    }
-}
-
-static void neq(int a[], int b[], unsigned int n = 32)
-{
-    for (unsigned int i = 0; i < n; ++i) {
-        clause(a[i], b[i]);
-        clause(-a[i], -b[i]);
-    }
-}
-
 static void and2(int r[], int a[], int b[], unsigned int n)
 {
     for (unsigned int i = 0; i < n; ++i) {
@@ -677,26 +661,18 @@ int main(int argc, char *argv[])
         }
 
         if (config_nr_hash_bits > 160) {
-            cerr << "ERROR: you cannot have more than 160 hash bits" << endl;
-            exit(-1);
-        }
-
-        if (config_nr_hash_bits < 0) {
-            cerr << "ERROR: you cannot have less than 0 hash bits" << endl;
+            cerr << "ERROR: you cannot have more than 160 hash bits." << endl;
+            cerr << "       Did you give a negative number?" << endl;
             exit(-1);
         }
 
         if (config_nr_message_bits > 512) {
             cerr << "ERROR: you cannot have more than 512 message bits" << endl;
+            cerr << "       Did you give a negative number?" << endl;
             exit(-1);
         }
 
-        if (config_nr_message_bits < 0) {
-            cerr << "ERROR: you cannot have less than 0 message bits" << endl;
-            exit(-1);
-        }
-
-        if (512-config_nr_message_bits > 25) {
+        if (512U-config_nr_message_bits > 25) {
             cerr << "ERROR: number of message bits have no more than 30 unknown bits" << endl;
             cerr << "       our internal counter will die (and so will the SAT solvers)" << endl;
             cerr << "       give a value that's more than 482" << endl;
@@ -751,9 +727,8 @@ int main(int argc, char *argv[])
         my_shuf[i] = i;
     }
     std::random_shuffle(my_shuf.begin(), my_shuf.end());
-    for(int i = 0; i < my_shuf.size(); i++) {
+    for(uint32_t i = 0; i < my_shuf.size(); i++) {
         if (i >= config_easy_sol_bits) {
-            //cerr << "my_shuf[i]: " << my_shuf[i] << endl;
             clause_noswitch(-1, message_bit_vars[my_shuf[i]]);
         }
     }

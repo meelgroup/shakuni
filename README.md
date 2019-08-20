@@ -4,11 +4,12 @@ Shakuni model counting and uniform sampling snake oil detector
 To create even samples:
 
 ```
-soos@vvv-dejavu:build$ ./counter --easy 11 --seed 23 --rounds 30 --message-bits 495 --hash-bits 6 > tosample
+./counter --seed 23 --easy 11 --rounds 30 --message-bits 495 --hash-bits 6 > tosample
 num hard solutions : 2056
 num easy solutions : 2048
 num total solutions: 4104
 ratio should be    : 0.4990 vs 0.5010
+
 cp tosample /home/soos/development/sat_solvers/scalmc/build/
 cp tosample /home/soos/development/sat_solvers/cryptominisat/build/
 ```
@@ -59,15 +60,10 @@ This creates 2**8 easy and 2**11 hard solutions:
 
 ```
 ./counter --easy 8 --seed 23   --rounds 30 --message-bits 495 --hash-bits 6 > tosample
-```
-
-Here, you should get 0.89:0.11 sample distribution:
-
-```
->>> 2**8/(2**11+2**8)
-0.1111111111111111
->>> 2**11/(2**11+2**8)
-0.8888888888888888
+num hard solutions : 2056
+num easy solutions : 256
+num total solutions: 2312
+easy vs hard ratio : 0.1107 vs 0.8893
 ```
 
 ScalMC gives:
@@ -87,3 +83,36 @@ $ egrep "v -?1 " x | awk '{print $2}' | sort | uniq -c
 ```
 
 So completely off, the **wrong way around**
+
+
+SharpSAT countable solutions
+-----
+
+```
+$ ./counter --easy 10 --seed 25   --rounds 10 --message-bits 500 --hash-bits 2 > tosample
+num hard solutions : 976
+num easy solutions : 1024
+num total solutions: 2000
+easy vs hard ratio : 0.5120 vs 0.4880
+```
+
+Running sharpSAT:
+
+```
+$ ./sharpSAT tosample
+[...]
+# solutions
+2000
+# END
+
+time: 3.07024s
+```
+
+ScalMC counts this as:
+
+```
+./approxmc --seed 13 tosample  -v1 --samples 100 --sampleout x1 --multisample 1
+[...]
+[appmc] finished counting solutions in 3.22 s
+[appmc] Number of solutions is: 63 x 2^5
+```

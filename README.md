@@ -53,7 +53,7 @@ This will give you the disparity. Should be approx 50-50 but it will be much wor
 Uneven solution space
 -----
 
-This creates 2**8 easy and 2**11 hard solutions:
+This creates 2^8 easy and 2^11 hard solutions:
 
 ```
 ./counter --easy 8 --seed 23   --rounds 30 --message-bits 495 --hash-bits 6 > tosample

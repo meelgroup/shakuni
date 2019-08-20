@@ -1,13 +1,18 @@
 Shakuni model counting and uniform sampling snake oil detector
 ===========================================
 
-To use:
+To create even samples:
 
 ```
-./counter --seed 21 --rounds 47 --message-bits 495 --hash-bits 6 > tosample
+./counter --seed 21 --easy 11 --rounds 47 --message-bits 495 --hash-bits 6 > tosample
 cp tosample /home/soos/development/sat_solvers/scalmc/build/
 cp tosample /home/soos/development/sat_solvers/cryptominisat/build/
 ```
+
+The total number of message bits is 512, we set 495 of them and let 17 of them "loose". Then, we force 6 bits of the output to be a fixed value. This leaves 11 bits of room, hence there is approx 2**11 solutions to the "hard" part of the solution space.
+
+The "easy" part of the solution space has 2**11 bits unset, hence has exactly 2**11 solutions.
+
 
 Sample with ScalMC
 -----
@@ -42,3 +47,13 @@ grep "v -1 " x | wc -l
 ```
 
 This will give you the disparity. Should be approx 50-50 but it will be much worse, around 98:2.
+
+
+Uneven solution space
+-----
+
+This creates 2**8 easy and 2**11 hard solutions:
+
+```
+./counter --easy 8 --seed 23   --rounds 30 --message-bits 495 --hash-bits 6 > tosample
+```

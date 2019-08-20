@@ -1,5 +1,5 @@
 ```
-./counter --seed 21 --rounds 47 --message-bits 498 --hash-bits 3 > tosample
+./counter --seed 21 --rounds 47 --message-bits 495 --hash-bits 6 > tosample
 cp tosample /home/soos/development/sat_solvers/scalmc/build/
 cp tosample /home/soos/development/sat_solvers/cryptominisat/build/
 ```
@@ -36,4 +36,4 @@ grep "v 1 " x | wc -l
 grep "v -1 " x | wc -l
 ```
 
-This will give you the disparity. Should be approx 50-50.
+This will give you the disparity. Should be approx 50-50 but it will be much worse, around 98:2.

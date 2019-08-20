@@ -1,7 +1,7 @@
-Shakuni model counting and uniform sampling snake oil detector
+Shakuni snake oil detector for model counting and uniform sampling
 ===========================================
 
-To create even samples:
+Example use:
 
 ```
 ./counter --seed 23 --easy 11 --rounds 30 --message-bits 495 --hash-bits 6 > tosample
@@ -9,14 +9,11 @@ num hard solutions : 2056
 num easy solutions : 2048
 num total solutions: 4104
 ratio should be    : 0.4990 vs 0.5010
-
-cp tosample /home/soos/development/sat_solvers/scalmc/build/
-cp tosample /home/soos/development/sat_solvers/cryptominisat/build/
 ```
 
-The total number of message bits is 512, we set 495 of them and let 17 of them "loose". Then, we force 6 bits of the output to be a fixed value. This leaves 11 bits of room, hence there is approx 2**11 solutions to the "hard" part of the solution space.
+The total number of message bits is 512, we set 495 of them and let 17 of them "loose". Then, we force 6 bits of the output to be a fixed value. This leaves 11 bits of room, hence there is approx 2^11 solutions to the "hard" part of the solution space.
 
-The "easy" part of the solution space has 2**11 bits unset, hence has exactly 2**11 solutions.
+The "easy" part of the solution space has 2^11 bits unset, hence has exactly 2^11 solutions.
 
 
 Sample with ScalMC
@@ -86,7 +83,7 @@ So completely off, the **wrong way around**
 
 
 SharpSAT countable solutions
------
+---
 
 ```
 $ ./counter --easy 10 --seed 25   --rounds 10 --message-bits 500 --hash-bits 2 > tosample

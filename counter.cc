@@ -49,6 +49,7 @@ static std::string config_attack = "preimage";
 static unsigned int config_nr_rounds = 80;
 static unsigned int config_nr_message_bits = 0;
 static unsigned int config_nr_hash_bits = 160;
+static unsigned int config_easy_sol_bits = 11;
 static bool all_zero_output = false;
 
 /* CNF options */
@@ -539,13 +540,14 @@ int main(int argc, char *argv[])
             "Number of fixed message bits (0-512)")
         ("hash-bits", value<unsigned int>(&config_nr_hash_bits),
              "Number of fixed hash bits (0-160)")
+        ("easy", value<unsigned int>(&config_easy_sol_bits),
+             "2**easy will be trivial solutions")
         ("zero", bool_switch(&all_zero_output),
              "When doing preimage attack, hash output should be zero")
         ;
 
         options_description format_options("Format options");
         format_options.add_options()
-            ("tseitin-adders", "Use Tseitin encoding of the circuit representation of adders")
             ("nocomment", "Don't add comments");
         ;
 
@@ -615,9 +617,8 @@ int main(int argc, char *argv[])
     }
     std::random_shuffle(my_shuf.begin(), my_shuf.end());
     assert(my_shuf.size() == message_bit_vars.size());
-    uint32_t unrestricted = 11;
     for(int i = 0; i < my_shuf.size(); i++) {
-        if (i >= unrestricted) {
+        if (i >= config_easy_sol_bits) {
             //std::cerr << "my_shuf[i]: " << my_shuf[i] << std::endl;
             clause_noswitch(-1, message_bit_vars[my_shuf[i]]);
         }

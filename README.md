@@ -1,3 +1,8 @@
+Shakuni model counting and uniform sampling snake oil detector
+===========================================
+
+To use:
+
 ```
 ./counter --seed 21 --rounds 47 --message-bits 495 --hash-bits 6 > tosample
 cp tosample /home/soos/development/sat_solvers/scalmc/build/
@@ -5,7 +10,7 @@ cp tosample /home/soos/development/sat_solvers/cryptominisat/build/
 ```
 
 Sample with ScalMC
-====
+-----
 
 This is the multisample setup, could be slightly skewed:
 ```
@@ -21,7 +26,7 @@ awk '{print $1}' x1 | sort | uniq -c
 
 
 Sample with CryptoMiniSat
-====
+-----
 
 Create `sample.sh`:
 ```

@@ -1,6 +1,12 @@
 /*
- * sha1-sat -- SAT instance generator for SHA-1
+ * shakuni -- model counter and uniform sampler testing framework
+ *            Based on the SHA-1 generator by Vegard Nossum
+ *
+ *            Thanks Vegard! You didn't get enough praise from the SHA-1 break
+ *            people, but what can you expect, they are from Google.
+ *
  * Copyright (C) 2011-2012  Vegard Nossum <vegard.nossum@gmail.com>
+ *                          Mate Soos <soos.mate@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

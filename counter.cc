@@ -62,6 +62,8 @@ std::stringstream indep_vars;
 std::vector<int> message_bit_vars;
 std::vector<char> input;
 std::vector<char> output;
+std::vector<uint32_t> message_bits_fixed;
+std::vector<uint32_t> hash_bits_fixed;
 
 static std::ostringstream cnf;
 
@@ -506,6 +508,7 @@ static void preimage()
         unsigned int s = message_bits[i] % 32;
 
         constant(f.w[r][s], input[message_bits[i]]);
+        message_bits_fixed.push_back(message_bits[i]);
     }
 
     //Fill message_bit_vars
@@ -533,6 +536,7 @@ static void preimage()
             unsigned int s = hash_bits[i] % 32;
 
             constant(f.h_out[r][s], output[hash_bits[i]]);
+            hash_bits_fixed.push_back(hash_bits[i]);
         }
     }
 }

@@ -51,9 +51,9 @@ using std::endl;
 
 /* Instance options */
 static std::string config_attack = "preimage";
-static unsigned int config_nr_rounds = 80;
-static unsigned int config_nr_message_bits = 0;
-static unsigned int config_nr_hash_bits = 160;
+static unsigned int config_nr_rounds = 30;
+static unsigned int config_nr_message_bits = 495;
+static unsigned int config_nr_hash_bits = 6;
 static unsigned int config_easy_sol_bits = 11;
 static bool all_zero_output = false;
 
@@ -674,6 +674,38 @@ int main(int argc, char *argv[])
 
         if (map.count("nocomment")) {
             nocomment = true;
+        }
+
+        if (config_nr_hash_bits > 160) {
+            cerr << "ERROR: you cannot have more than 160 hash bits" << endl;
+            exit(-1);
+        }
+
+        if (config_nr_hash_bits < 0) {
+            cerr << "ERROR: you cannot have less than 0 hash bits" << endl;
+            exit(-1);
+        }
+
+        if (config_nr_message_bits > 512) {
+            cerr << "ERROR: you cannot have more than 512 message bits" << endl;
+            exit(-1);
+        }
+
+        if (config_nr_message_bits < 0) {
+            cerr << "ERROR: you cannot have less than 0 message bits" << endl;
+            exit(-1);
+        }
+
+        if (512-config_nr_message_bits > 25) {
+            cerr << "ERROR: number of message bits have no more than 30 unknown bits" << endl;
+            cerr << "       our internal counter will die (and so will the SAT solvers)" << endl;
+            cerr << "       give a value that's more than 482" << endl;
+            exit(-1);
+        }
+
+        if (all_zero_output) {
+            cerr << "ERROR: Shakuni currently does NOT work with all-zero output" << endl;
+            exit(-1);
         }
     }
 

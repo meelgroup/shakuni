@@ -113,3 +113,48 @@ ScalMC counts this as:
 [appmc] finished counting solutions in 3.22 s
 [appmc] Number of solutions is: 63 x 2^5
 ```
+
+
+Large number of solutions
+---
+
+```
+$ ./counter --easy 19 --seed 25   --rounds 10 --message-bits 490 --hash-bits 4 > tosample
+num hard solutions : 648192
+num easy solutions : 524288
+num total solutions: 1172480
+```
+
+SharpSAT:
+
+```
+./sharpSAT tosample
+[...]
+# solutions
+1172480
+# END
+
+time: 3.07537s
+```
+
+
+Other interesting examples
+---
+
+```
+./counter --easy 20 --seed 25   --rounds 14 --message-bits 488 --hash-bits 8 > tosample
+num hard solutions : 67536
+num easy solutions : 1048576
+num total solutions: 1116112
+easy vs hard ratio : 0.9395 vs 0.0605
+```
+
+ScalMC is again correct, but CMS gives:
+
+```
+soos@vvv-dejavu:build$ egrep "v -?1 " x | awk '{print $2}' | sort | uniq -c
+     45 -1
+     55 1
+```
+
+Which is wrong

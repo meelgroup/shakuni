@@ -44,6 +44,10 @@
 #define my_popcnt(x) __builtin_popcount(x)
 #endif
 
+using std::cout;
+using std::cerr;
+using std::endl;
+
 /* Instance options */
 static std::string config_attack = "preimage";
 static unsigned int config_nr_rounds = 80;
@@ -60,8 +64,8 @@ static bool nocomment = false;
 int var_switch[1];
 std::stringstream indep_vars;
 std::vector<int> message_bit_vars;
-std::vector<char> input;
-std::vector<char> output;
+std::vector<int> input;
+std::vector<int> output;
 std::vector<uint32_t> message_bits_fixed;
 std::vector<uint32_t> hash_bits_fixed;
 
@@ -76,7 +80,6 @@ static void comment(std::string str)
 
 static int nr_variables = 0;
 static unsigned int nr_clauses = 0;
-static unsigned int nr_xor_clauses = 0;
 static unsigned int nr_constraints = 0;
 
 static void new_vars(std::string label, int x[], unsigned int n)
@@ -467,6 +470,85 @@ static void sha1_forward(unsigned int nr_rounds, uint32_t w[80], uint32_t h_out[
     h_out[4] = h4 + e;
 }
 
+void set_input(uint32_t w[80])
+{
+    for (unsigned int i = 0; i < 16; ++i) {
+        w[i] = 0;
+        for(uint32_t i2 = 0; i2 < 32; i2++) {
+            w[i] <<= 1;
+            w[i] |= (uint32_t)input[i*32+31-i2];
+        }
+    }
+}
+
+uint64_t count_num_solutions()
+{
+    uint64_t num_solutions = 0;
+
+    std::vector<uint32_t> message_bits_unfixed;
+    std::vector<int> message_bits_fixed_lookup(512, 0);
+    for(auto& x: message_bits_fixed) {
+        message_bits_fixed_lookup[x] = 1;
+    }
+    for(uint32_t i = 0; i < message_bits_fixed_lookup.size(); i++) {
+        if (message_bits_fixed_lookup[i] == 0) {
+            message_bits_unfixed.push_back(i);
+        }
+    }
+
+
+    uint32_t w[80];
+    uint32_t num_unset_bits = 512-config_nr_message_bits;
+    assert(num_unset_bits < 32 && "We cannot count over more than 31 unset bits");
+
+    uint64_t num_to_try = 1ULL<<num_unset_bits;
+    for(uint64_t counter = 0; counter < num_to_try; counter++) {
+        /*cerr << "hash_bits_fixed size: " << hash_bits_fixed.size()
+        << " num_to_try: " << num_to_try << " counter: " << counter << endl;*/
+
+        for(uint32_t i2 = 0; i2 < num_unset_bits; i2++) {
+            int val = (counter >> i2)&1;
+            //cerr << "setting: " << message_bits_unfixed[i2] << " to: " << val << endl;
+            input[message_bits_unfixed[i2]] = val;
+        }
+        set_input(w);
+
+        uint32_t h[5];
+        sha1_forward(config_nr_rounds, w, h);
+
+        //sanity
+        if (num_unset_bits == 0) {
+            for(uint32_t i = 0; i < 5; i++) {
+                for(uint32_t i2 = 0; i2 < 32; i2++) {
+                    int val = ((h[i] >> i2) & 1);
+                    //cerr << "i: " << i << " i2:" << i2 << endl;
+                    //cerr << "output[i*32+i2]: " << output[i*32+i2] << endl;
+                    //cerr << "val: " << val << endl;
+                    assert(output[i*32+i2] == val);
+                }
+            }
+        }
+        //sanity over
+
+        bool ok = true;
+        for(auto& x: hash_bits_fixed) {
+            int val = (h[x/32] >> ((x%32))) & 1;
+            /*cerr << "x: " << x << " x/32: " << x/32 << " x%32: " << x%32 << endl;
+            cerr << "val: " << val << endl;
+            cerr << "output[x]: " << output[x] << endl;*/
+            if (val != output[x]) {
+                ok = false;
+                break;
+            }
+        }
+
+        if (ok) {
+            num_solutions++;
+        }
+    }
+    return num_solutions;
+}
+
 static void preimage()
 {
     sha1 f(config_nr_rounds, "");
@@ -585,7 +667,7 @@ int main(int argc, char *argv[])
         notify(map);
 
         if (map.count("help")) {
-            std::cout << all_options;
+            cout << all_options;
             return 0;
         }
 
@@ -638,7 +720,7 @@ int main(int argc, char *argv[])
     std::random_shuffle(my_shuf.begin(), my_shuf.end());
     for(int i = 0; i < my_shuf.size(); i++) {
         if (i >= config_easy_sol_bits) {
-            //std::cerr << "my_shuf[i]: " << my_shuf[i] << std::endl;
+            //cerr << "my_shuf[i]: " << my_shuf[i] << endl;
             clause_noswitch(-1, message_bit_vars[my_shuf[i]]);
         }
     }
@@ -655,7 +737,19 @@ int main(int argc, char *argv[])
     }
     //clause_noswitch(-1);
 
-    std::cout << format("p cnf $ $\n", nr_variables, nr_clauses) << cnf.str();
+    cout << format("p cnf $ $\n", nr_variables, nr_clauses) << cnf.str();
+
+    uint64_t num_hard_solutions = count_num_solutions();
+    uint64_t num_easy_solutions = (1ULL<<config_easy_sol_bits);
+    comment(format("num hard solutions: $", num_hard_solutions));
+    comment(format("num easy solutions: $", num_easy_solutions));
+    comment(format("total num solutions: $",
+                   num_easy_solutions+num_hard_solutions));
+
+    cerr << "num hard solutions: " << num_hard_solutions << endl;
+    cerr << "num easy solutions: " << num_easy_solutions << endl;
+    cerr << "num total solutions: "
+         << num_easy_solutions+num_hard_solutions  << endl;
 
     return 0;
 }

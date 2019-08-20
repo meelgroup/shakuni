@@ -19,6 +19,8 @@
 # THE SOFTWARE.
 
 cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 11)
 
 if(POLICY CMP0048)
     cmake_policy(SET CMP0048 NEW)
@@ -71,6 +73,9 @@ endforeach()
 PROJECT(shakuni)
 
 option(STATICCOMPILE "Compile to static executable" OFF)
+if (STATICCOMPILE)
+    set(BUILD_SHARED_LIBS OFF)
+endif()
 
 
 if (NOT WIN32)

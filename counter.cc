@@ -33,6 +33,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -741,15 +742,20 @@ int main(int argc, char *argv[])
 
     uint64_t num_hard_solutions = count_num_solutions();
     uint64_t num_easy_solutions = (1ULL<<config_easy_sol_bits);
-    comment(format("num hard solutions: $", num_hard_solutions));
-    comment(format("num easy solutions: $", num_easy_solutions));
-    comment(format("total num solutions: $",
-                   num_easy_solutions+num_hard_solutions));
+    uint64_t num_total_solutions = num_easy_solutions+num_hard_solutions;
 
-    cerr << "num hard solutions: " << num_hard_solutions << endl;
-    cerr << "num easy solutions: " << num_easy_solutions << endl;
-    cerr << "num total solutions: "
-         << num_easy_solutions+num_hard_solutions  << endl;
+    comment(format("num hard solutions:  $", num_hard_solutions));
+    comment(format("num easy solutions:  $", num_easy_solutions));
+    comment(format("total num solutions: $", num_total_solutions));
+
+    cerr << "num hard solutions : " << num_hard_solutions << endl;
+    cerr << "num easy solutions : " << num_easy_solutions << endl;
+    cerr << "num total solutions: " << num_total_solutions  << endl;
+    cerr << "easy vs hard ratio : "
+    << std::fixed << std::setprecision(4) << (double)num_easy_solutions/(double)num_total_solutions
+    << " vs "
+    << std::fixed << std::setprecision(4) << (double)num_hard_solutions/(double)num_total_solutions
+    << endl;
 
     return 0;
 }

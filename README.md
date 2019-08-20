@@ -4,7 +4,11 @@ Shakuni model counting and uniform sampling snake oil detector
 To create even samples:
 
 ```
-./counter --seed 21 --easy 11 --rounds 47 --message-bits 495 --hash-bits 6 > tosample
+soos@vvv-dejavu:build$ ./counter --easy 11 --seed 23 --rounds 30 --message-bits 495 --hash-bits 6 > tosample
+num hard solutions : 2056
+num easy solutions : 2048
+num total solutions: 4104
+ratio should be    : 0.4990 vs 0.5010
 cp tosample /home/soos/development/sat_solvers/scalmc/build/
 cp tosample /home/soos/development/sat_solvers/cryptominisat/build/
 ```

@@ -1,4 +1,4 @@
-Shakuni snake oil detector for model counting and uniform sampling
+Shakuni counting and sampling tester
 ===========================================
 
 Example use:

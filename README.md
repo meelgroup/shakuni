@@ -1,4 +1,4 @@
-Shakuni counting and sampling tester
+Shakuni -- approximate counting and sampling tester
 ===========================================
 
 Example use:

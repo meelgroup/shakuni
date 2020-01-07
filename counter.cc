@@ -745,12 +745,12 @@ int main(int argc, char *argv[])
     }
     //clause_noswitch(-1);
 
-    cout << format("p cnf $ $\n", nr_variables, nr_clauses) << cnf.str();
+    //cout << format("p cnf $ $\n", nr_variables, nr_clauses) << cnf.str();
 
     uint64_t num_hard_solutions = count_num_solutions();
     uint64_t num_easy_solutions = (1ULL<<config_easy_sol_bits);
     uint64_t num_total_solutions = num_easy_solutions+num_hard_solutions;
-
+    cout << format("p cnf $ $\nc num_solutions $ \n", nr_variables, nr_clauses, num_hard_solutions) << cnf.str();
     comment(format("num hard solutions:  $", num_hard_solutions));
     comment(format("num easy solutions:  $", num_easy_solutions));
     comment(format("total num solutions: $", num_total_solutions));

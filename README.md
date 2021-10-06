@@ -4,7 +4,7 @@ Shakuni -- approximate counting & sampling tester
 Example use:
 
 ```
-./counter --seed 23 --easy 11 --rounds 30 --message-bits 495 --hash-bits 6 > tosample
+./cnf_gen --seed 23 --easy 11 --rounds 30 --message-bits 495 --hash-bits 6 > tosample
 num hard solutions : 2056
 num easy solutions : 2048
 num total solutions: 4104
@@ -34,6 +34,7 @@ awk '{print $1}' x1 | sort | uniq -c
 
 Sample with CryptoMiniSat
 -----
+You MUST use 928095176510876dda473cab1b0fe9584d2b4953 CryptoMiniSat. No other version is supported
 
 Create `sample.sh`:
 ```
@@ -56,7 +57,7 @@ Uneven solution space
 This creates 2^8 easy and 2^11 hard solutions:
 
 ```
-./counter --easy 8 --seed 23   --rounds 30 --message-bits 495 --hash-bits 6 > tosample
+./cnf_gen --easy 8 --seed 23   --rounds 30 --message-bits 495 --hash-bits 6 > tosample
 num hard solutions : 2056
 num easy solutions : 256
 num total solutions: 2312
@@ -86,7 +87,7 @@ SharpSAT countable solutions
 ---
 
 ```
-$ ./counter --easy 10 --seed 25   --rounds 10 --message-bits 500 --hash-bits 2 > tosample
+$ ./cnf_gen --easy 10 --seed 25   --rounds 10 --message-bits 500 --hash-bits 2 > tosample
 num hard solutions : 976
 num easy solutions : 1024
 num total solutions: 2000
@@ -119,7 +120,7 @@ Large number of solutions
 ---
 
 ```
-$ ./counter --easy 19 --seed 25   --rounds 10 --message-bits 490 --hash-bits 4 > tosample
+$ ./cnf_gen --easy 19 --seed 25   --rounds 10 --message-bits 490 --hash-bits 4 > tosample
 num hard solutions : 648192
 num easy solutions : 524288
 num total solutions: 1172480
@@ -142,7 +143,7 @@ Other interesting examples
 ---
 
 ```
-./counter --easy 20 --seed 25   --rounds 14 --message-bits 488 --hash-bits 8 > tosample
+./cnf_gen --easy 20 --seed 25   --rounds 14 --message-bits 488 --hash-bits 8 > tosample
 num hard solutions : 67536
 num easy solutions : 1048576
 num total solutions: 1116112
@@ -163,7 +164,7 @@ Which is wrong
 # Mate's notes
 below works with sampler's seed at 1 or 4, both are giving correct/wrong answers.
 
-./counter --easy 8 --seed 25   --rounds 13 --message-bits 500 --hash-bits 4 > tosample
+./cnf_gen --easy 8 --seed 25   --rounds 13 --message-bits 500 --hash-bits 4 > tosample
 num hard solutions : 288
 num easy solutions : 256
 num total solutions: 544
@@ -175,7 +176,7 @@ egrep "v -?1 " x | awk '{print $2}' | sort | uniq -c
 
 
 
-./counter --easy 8 --seed 25   --rounds 23 --message-bits 500 --hash-bits 4 > tosample
+./cnf_gen --easy 8 --seed 25   --rounds 23 --message-bits 500 --hash-bits 4 > tosample
 num hard solutions : 241
 num easy solutions : 256
 num total solutions: 497

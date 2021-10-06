@@ -1,6 +1,13 @@
 Shakuni -- approximate counting & sampling tester
 ===========================================
 
+
+
+## Copyright
+Original SHA-1 CNF generator is by Vegard Nossum (thanks Vegard!), GPLv3. All modifications are by Mate Soos.
+
+
+
 Example use:
 
 ```

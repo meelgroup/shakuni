@@ -158,3 +158,31 @@ soos@vvv-dejavu:build$ egrep "v -?1 " x | awk '{print $2}' | sort | uniq -c
 ```
 
 Which is wrong
+
+
+# Mate's notes
+below works with sampler's seed at 1 or 4, both are giving correct/wrong answers.
+
+./counter --easy 8 --seed 25   --rounds 13 --message-bits 500 --hash-bits 4 > tosample
+num hard solutions : 288
+num easy solutions : 256
+num total solutions: 544
+easy vs hard ratio : 0.4706 vs 0.5294
+./sample.sh 1 tosample  > x
+egrep "v -?1 " x | awk '{print $2}' | sort | uniq -c
+     54 -1
+     46 1
+
+
+
+./counter --easy 8 --seed 25   --rounds 23 --message-bits 500 --hash-bits 4 > tosample
+num hard solutions : 241
+num easy solutions : 256
+num total solutions: 497
+easy vs hard ratio : 0.5151 vs 0.4849
+./sample.sh 1 tosample  > x
+egrep "v -?1 " x | awk '{print $2}' | sort | uniq -c
+      1 -1
+     99 1
+
+

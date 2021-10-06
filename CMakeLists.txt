@@ -121,15 +121,15 @@ endif()
 find_package( Boost 1.46 REQUIRED COMPONENTS program_options)
 include_directories(${Boost_INCLUDE_DIRS})
 
-add_executable(counter
-    counter.cc
+add_executable(cnf_gen
+    cnf_gen.cpp
 )
 
-set_target_properties(counter PROPERTIES
+set_target_properties(cnf_gen PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
     INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-target_link_libraries(counter
+target_link_libraries(cnf_gen
     ${Boost_LIBRARIES}
 )
 

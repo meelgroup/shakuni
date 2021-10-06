@@ -588,6 +588,7 @@ static void preimage()
     /* Fix hash bits */
     comment(format("Fix $ hash bits", config_nr_hash_bits));
 
+    //TODO remove all_zero_output
     if (all_zero_output) {
         for (unsigned int i = 0; i < config_nr_hash_bits; ++i) {
             constant(f.h_out[i / 32][i % 32], 0);

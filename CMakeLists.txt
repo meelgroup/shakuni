@@ -72,9 +72,102 @@ endforeach()
 
 PROJECT(shakuni)
 
+option(BUILD_SHARED_LIBS "Build the shared library" ON)
 option(STATICCOMPILE "Compile to static executable" OFF)
 if (STATICCOMPILE)
     set(BUILD_SHARED_LIBS OFF)
+    set(Boost_USE_STATIC_LIBS ON)
+endif()
+
+
+# Note: O3 gives slight speed increase, 1 more solved from SAT Comp'14 @ 3600s
+if (NOT MSVC)
+    add_compile_options( -g)
+    add_compile_options( -pthread )
+
+    #NOTE: out-satrace19-8373595 has confirmed that O3+flto only hurts compared to O2
+    #      on gcc version 7.3.0
+    add_compile_options("$<$<CONFIG:RELWITHDEBINFO>:-O2>")
+
+    add_compile_options("$<$<CONFIG:RELEASE>:-O2>")
+    add_compile_options("$<$<CONFIG:RELEASE>:-g0>")
+
+    add_compile_options("$<$<CONFIG:DEBUG>:-O0>")
+
+    if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -O2")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -O2")
+    endif()
+
+else()
+    # see https://msdn.microsoft.com/en-us/library/fwkeyyhe.aspx for details
+    # /ZI = include debug info
+    # /Wall = all warnings
+
+    add_definitions(-DNGETRUSAGE)
+    add_compile_options("$<$<CONFIG:RELWITHDEBINFO>:/O2>")
+    add_compile_options("$<$<CONFIG:RELWITHDEBINFO>:/ZI>")
+
+    add_compile_options("$<$<CONFIG:RELEASE>:/O2>")
+    add_compile_options("$<$<CONFIG:RELEASE>:/D>")
+    add_compile_options("$<$<CONFIG:RELEASE>:/NDEBUG>")
+
+    add_compile_options("$<$<CONFIG:DEBUG>:/Od>")
+
+    if (STATICCOMPILE)
+        # We statically link to reduce dependencies
+        foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+            # /MD -- Causes the application to use the multithread-specific
+            #        and DLL-specific version of the run-time library.
+            #        Defines _MT and _DLL and causes the compiler to place
+            #        the library name MSVCRT.lib into the .obj file.
+            if(${flag_var} MATCHES "/MD")
+                string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+            endif(${flag_var} MATCHES "/MD")
+
+            # /MDd	-- Defines _DEBUG, _MT, and _DLL and causes the application to use the debug multithread-specific and DLL-specific version of the run-time library.
+            #          It also causes the compiler to place the library name MSVCRTD.lib into the .obj file.
+            if(${flag_var} MATCHES "/MDd")
+                string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
+            endif(${flag_var} MATCHES "/MDd")
+        endforeach(flag_var)
+
+        # Creates a multithreaded executable (static) file using LIBCMT.lib.
+        add_compile_options(/MT)
+    endif()
+
+    # buffers security check
+    add_compile_options(/GS)
+
+    # Proper warning level
+    add_compile_options(/W1)
+
+    # Disable STL used in DLL-boundary warning
+    add_compile_options(/wd4251)
+    add_compile_options(/D_CRT_SECURE_NO_WARNINGS)
+
+    # Wall is MSVC's Weverything, so annoying unless used from the start
+    # and with judiciously used warning disables
+    # add_compile_options(/Wall)
+
+    # /Za = only ansi C98 & C++11
+    # /Za is not recommended for use, not tested, etc.
+    # see: http://stackoverflow.com/questions/5489326/za-compiler-directive-does-not-compile-system-headers-in-vs2010
+    # add_compile_options(/Za)
+
+    add_compile_options(/fp:precise)
+
+    # exception handling. s = The exception-handling model that catches C++ exceptions only and tells the compiler to assume that functions declared as extern "C" may throw an exception.
+    # exception handling. c = If used with s (/EHsc), catches C++ exceptions only and tells the compiler to assume that functions declared as extern "C" never throw a C++ exception.
+    add_compile_options(/EHsc)
+
+
+    # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /INCREMENTAL:NO")
+    # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /PDBCOMPRESS")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
+
+    #what does this do?
+    set(DEF_INSTALL_CMAKE_DIR CMake)
 endif()
 
 
@@ -116,6 +209,34 @@ if (NOT WIN32)
     endif()
 endif()
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND NOT SANITIZE)
+    set(CMAKE_EXE_LINKER_FLAGS " ${CMAKE_EXE_LINKER_FLAGS} -Wl,--discard-all -Wl,--build-id=sha1")
+endif()
+
+if ((${CMAKE_SYSTEM_NAME} MATCHES "Linux") OR (${CMAKE_SYSTEM_NAME} MATCHES "Darwin"))
+    if(NOT BUILD_SHARED_LIBS)
+        MESSAGE(STATUS "Compiling for static library use")
+        if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -Wl,--whole-archive -ldl -lpthread -Wl,--no-whole-archive -static ")
+        endif()
+
+        SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+
+        # removing -rdynamic that's automatically added
+        foreach (language CXX C)
+            set(VAR_TO_MODIFY "CMAKE_SHARED_LIBRARY_LINK_${language}_FLAGS")
+            string(REGEX REPLACE "(^| )-rdynamic($| )"
+                                 " "
+                                 replacement
+                                 "${${VAR_TO_MODIFY}}")
+            #message("Original (${VAR_TO_MODIFY}) is ${${VAR_TO_MODIFY}} replacement is ${replacement}")
+            set(${VAR_TO_MODIFY} "${replacement}" CACHE STRING "Default flags for ${build_config} configuration" FORCE)
+        endforeach()
+    else()
+        add_definitions(-DBOOST_TEST_DYN_LINK)
+        MESSAGE(STATUS "Compiling for dynamic library use")
+    endif()
+endif()
 
 
 find_package( Boost 1.46 REQUIRED COMPONENTS program_options)
